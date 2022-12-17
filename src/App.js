@@ -83,13 +83,14 @@ function App() {
     setScrapingResult(null);
 
 
-    var videoId = videoLink.substring(videoLink.indexOf('/video/') + 7, videoLink.indexOf('/video/') + 7 + 19);
+    var videoId = videoLink /*videoLink.substring(videoLink.indexOf('/video/') + 7, videoLink.indexOf('/video/') + 7 + 19)*/;
+    
 
     //join socket room
     JoinRoom(videoId)
 
     try {
-      const response = await fetch(`${SERVER_HOST}/api/${videoId}`, {
+      const response = await fetch(`${SERVER_HOST}/api/${videoId}`, { //it's not videoId but username 
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
@@ -133,11 +134,12 @@ function App() {
       <div style={{ width: '90%', maxWidth: '500px', margin: "auto" }} >
         <h1 style={{ textAlign: 'left' }} className='text-3xl mb-4 font-semibold' >TikTok Account Videos Downloader</h1>
         <h3 style={{ marginTop: '-10px', opacity: '0.9', fontWeight: '200', textAlign: 'left' }} className='text-lg' >
-          Please enter any video link by the account below</h3>
+        Please enter the Account Username below</h3>
 
+   
         <div style={{ display: 'flex', alignItems: 'center', marginTop: '40px' }} >
-          {/* <p style={{ opacity: '0.5', fontSize: '20px', marginRight: '7px' }} >@</p> */}
-          <input type="text" value={videoLink} onChange={(e) => setVideoLink(e.target.value)} placeholder="video link" data-e2e="common-StringInput-TUXTextInput" className="css-5g0doo eyio37s1 snipcss-woI25" />
+          <p style={{ opacity: '0.5', fontSize: '20px', marginRight: '7px' }} >@</p>
+          <input type="text" value={videoLink} onChange={(e) => setVideoLink(e.target.value)} placeholder="username" data-e2e="common-StringInput-TUXTextInput" className="css-5g0doo eyio37s1 snipcss-woI25" />
 
 
         </div>
