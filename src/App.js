@@ -14,7 +14,8 @@ import { FaLink } from 'react-icons/fa';
 
 import { MdOutlineError } from 'react-icons/md';
 
-var SERVER_HOST = 'http://147.182.131.203:5001';
+var SERVER_HOST = 'http://165.22.70.193:8080';
+//var SERVER_HOST = 'http://147.182.131.203:5001';
 //var SERVER_HOST = 'http://localhost:8080';
 
 const socket = io(SERVER_HOST);
