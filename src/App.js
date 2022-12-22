@@ -78,7 +78,8 @@ function App() {
      })*/
 
   const [scrapingResult, setScrapingResult] = useState(null)
-
+  const [scrapingResults, setScrapingResults] = useState([])
+  console.log(scrapingResults)
   const GetAccountVideos = async () => {
     setScrapingAccountVideosErrorMessage('');
     setLoadingAccountVideos(true);
@@ -86,7 +87,7 @@ function App() {
 
 
     var videoId = videoLink /*videoLink.substring(videoLink.indexOf('/video/') + 7, videoLink.indexOf('/video/') + 7 + 19)*/;
-    
+
 
     //join socket room
     JoinRoom(videoId)
@@ -101,6 +102,15 @@ function App() {
       const data = await response.json();
       console.log(data)
       setScrapingResult(data)
+
+      if(data?.error){
+       // setScrapingAccountVideosErrorMessage(data?.message);
+        setScrapingResults(scrapingResults => [{...data, error:data?.message }, ...scrapingResults])
+
+      } else {
+        setScrapingResults(scrapingResults => [data, ...scrapingResults])
+
+      }
 
     } catch (error) {
       setScrapingAccountVideosErrorMessage(error.message);
@@ -136,9 +146,9 @@ function App() {
       <div style={{ width: '90%', maxWidth: '500px', margin: "auto" }} >
         <h1 style={{ textAlign: 'left' }} className='text-3xl mb-4 font-semibold' >TikTok Account Videos Downloader</h1>
         <h3 style={{ marginTop: '-10px', opacity: '0.9', fontWeight: '200', textAlign: 'left' }} className='text-lg' >
-        Please enter the Account Username below</h3>
+          Please enter the Account Username below</h3>
 
-   
+
         <div style={{ display: 'flex', alignItems: 'center', marginTop: '40px' }} >
           <p style={{ opacity: '0.5', fontSize: '20px', marginRight: '7px' }} >@</p>
           <input type="text" value={videoLink} onChange={(e) => setVideoLink(e.target.value)} placeholder="username" data-e2e="common-StringInput-TUXTextInput" className="css-5g0doo eyio37s1 snipcss-woI25" />
@@ -157,52 +167,64 @@ function App() {
         </Tooltip>
 
         <div className="lds-ripple" style={{ display: !loadingAccountVideos && 'none', opacity: loadingAccountVideos ? '1' : '0', marginBottom: '-30px' }}><div></div><div></div></div>
-        {scrapingResult && <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', margin: 'auto', width: 'fit-content', marginTop: '40px' }} >
+        {scrapingAccountVideosErrorMessage && <div style={{ color: 'red', fontWeight: '400' }} ><BiError /> {scrapingAccountVideosErrorMessage}</div>}
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: (scrapingResult) ? '1' : '0.5' }} >
-            <AiFillCheckCircle className='StepsNumber' style={{ backgroundColor: scrapingResult && 'limegreen' }} />
 
-            {scrapingResult?.profileUsername && <p className='StepsLabel' ><b>{scrapingResult.profileUsername}</b> profile scraped !   &nbsp;
-              {accountVideos &&
-                <b>({accountVideos?.length} video)
-                </b>
-              }
-            </p>}
+        {scrapingResults && <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', margin: 'auto', width: 'fit-content', marginTop: '40px' }} >
 
-          </div>
-          {scrapingAccountVideosErrorMessage && <div style={{ color: 'red', fontWeight: '400' }} ><BiError /> {scrapingAccountVideosErrorMessage}</div>}
+          {scrapingResults.map((scrapingResult) => {
+            return (
+              <div style={{marginBottom:'30px', marginTop:'20px'}}>
 
-          <div className='FirstStepContent' style={{ borderLeft: '1px solid lightgrey', paddingLeft: '30px', marginLeft: '20px', marginTop: '30px' }} >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', opacity: (scrapingResult) ? '1' : '0.5' }} >
+                  {scrapingResult.allDownloadLink ? <AiFillCheckCircle className='StepsNumber' style={{ backgroundColor: scrapingResult && 'limegreen' }} /> : <BiError className='StepsNumber' style={{color:'red', background:'none'}} />}
 
-            <div className="text-green-500 mt-0 mb-4 hover:text-green-600 text-sm transition duration-300 ease-in-out mb-4 bg:black py-2 px-4 bg-slate-100 rounded-md w-full 	 "   >
-              <p className={clsx('ml-2  font-sm text-left  font-normal text-gray-600')} >  Total profile videos : <b> {scrapingResult?.profileVideosCount}</b> videos  </p>
-            </div>
-            
-            {scrapingResult?.newDownloadedVideosCount && <div className="text-green-500 mt-0 mb-4 hover:text-green-600 text-sm transition duration-300 ease-in-out mb-4 bg:black py-2 px-4 bg-slate-100 rounded-md w-full flex	 "   >
-              {<p className='ml-2 text-green-400 font-sm text-right  text-md' ><AiFillCheckCircle style={{ marginLeft: '3px', marginTop: '3px' }} /></p>}
-              <div >
-                <p className={clsx('ml-2  font-sm text-left  font-normal text-green-600')} >  Videos scraped now : <b> {scrapingResult?.newDownloadedVideosCount}</b> videos  </p>
-                <a href={scrapingResult?.newDownloadLink} target={'_blank'} className={'ml-2  font-sm text-left  font-semibold text-blue-500 underline'} > Download new videos </a>
+                  {scrapingResult?.allDownloadLink ? <p className='StepsLabel' ><b>{scrapingResult.profileUsername}</b> profile scraped !   &nbsp;
+                    {accountVideos &&
+                      <b>({accountVideos?.length} video)
+                      </b>
+                    }
+                  </p> : <p className='StepsLabel' style={{color:'red',textAlign: 'left'}}><b>{scrapingResult?.profileUsername} </b> Something went wrong, couldn't scrape profile !</p>}
+
+
+                </div>
+
+                <div className='FirstStepContent' style={{ borderLeft: '1px solid lightgrey', paddingLeft: '30px', marginLeft: '20px', marginTop: '30px' }} >
+                {scrapingResult?.error && <div style={{ color: 'red', fontWeight: '400', fontSize:'10px', marginBlock:'10px' }} > {scrapingResult?.error}</div>}
+
+                  <div className="text-green-500 mt-0 mb-4 hover:text-green-600 text-sm transition duration-300 ease-in-out mb-4 bg:black py-2 px-4 bg-slate-100 rounded-md w-full 	 "   >
+                    <p className={clsx('ml-2  font-sm text-left  font-normal text-gray-600')} >  Total profile videos : <b> {scrapingResult?.profileVideosCount || 0}</b> videos  </p>
+                  </div>
+
+                  {scrapingResult?.newDownloadedVideosCount && <div className="text-green-500 mt-0 mb-4 hover:text-green-600 text-sm transition duration-300 ease-in-out mb-4 bg:black py-2 px-4 bg-slate-100 rounded-md w-full flex	 "   >
+                    {<p className='ml-2 text-green-400 font-sm text-right  text-md' ><AiFillCheckCircle style={{ marginLeft: '3px', marginTop: '3px' }} /></p>}
+                    <div >
+                      <p className={clsx('ml-2  font-sm text-left  font-normal text-green-600')} >  Videos scraped now : <b> {scrapingResult?.newDownloadedVideosCount || 0}</b> videos  </p>
+                      <a href={scrapingResult?.newDownloadLink} target={'_blank'} className={'ml-2  font-sm text-left  font-semibold text-blue-500 underline'} > Download new videos </a>
+                    </div>
+
+                  </div>}
+                  <div className="text-green-500 mt-0 mb-4 hover:text-green-600 text-sm transition duration-300 ease-in-out mb-4 bg:black py-2 px-4 bg-slate-100 rounded-md w-full flex	 "   >
+                    {<p className='ml-2 text-green-400 font-sm text-right  text-md' ><AiFillCheckCircle style={{ marginLeft: '3px', marginTop: '3px' }} /></p>}
+                    <div >
+                      <p className={'ml-2  font-sm text-left  font-normal text-green-600'} >  Total scraped videos : <b> {scrapingResult?.allDownloadedVideosCount || 0}</b> videos  </p>
+                      {scrapingResult?.allDownloadLink && <a href={scrapingResult?.allDownloadLink} target={'_blank'} className={'ml-2  font-sm text-left  font-semibold text-blue-500 underline'} > Download all videos </a>}
+                    </div>
+                  </div>
+
+                  {((scrapingResult?.profileVideosCount - scrapingResult?.allDownloadedVideosCount) > 0) && <div className="text-green-500 mt-0 mb-4 hover:text-green-600 text-sm transition duration-300 ease-in-out mb-4 bg:black py-2 px-4 bg-slate-100 rounded-md w-full flex	 "   >
+                    {<p className='ml-2 text-red-400 font-sm text-right  text-md' ><MdOutlineError style={{ marginLeft: '3px', marginTop: '3px' }} /></p>}
+                    <div >
+                      <p className={'ml-2  font-sm text-left  font-normal text-red-500'} >  Videos failed to be scraped : <b> {scrapingResult?.profileVideosCount - scrapingResult?.allDownloadedVideosCount}</b> video{(scrapingResult?.profileVideosCount - scrapingResult?.allDownloadedVideosCount) > 1 && 's'}  </p>
+                    </div>
+                  </div>}
+
+                </div>
               </div>
 
-            </div>}
-            <div className="text-green-500 mt-0 mb-4 hover:text-green-600 text-sm transition duration-300 ease-in-out mb-4 bg:black py-2 px-4 bg-slate-100 rounded-md w-full flex	 "   >
-              {<p className='ml-2 text-green-400 font-sm text-right  text-md' ><AiFillCheckCircle style={{ marginLeft: '3px', marginTop: '3px' }} /></p>}
-              <div >
-                <p className={'ml-2  font-sm text-left  font-normal text-green-600'} >  Total scraped videos : <b> {scrapingResult?.allDownloadedVideosCount}</b> videos  </p>
-                <a href={scrapingResult?.allDownloadLink} target={'_blank'} className={'ml-2  font-sm text-left  font-semibold text-blue-500 underline'} > Download all videos </a>
-              </div>
-            </div>
 
-            {((scrapingResult?.profileVideosCount - scrapingResult?.allDownloadedVideosCount) > 0) && <div className="text-green-500 mt-0 mb-4 hover:text-green-600 text-sm transition duration-300 ease-in-out mb-4 bg:black py-2 px-4 bg-slate-100 rounded-md w-full flex	 "   >
-              {<p className='ml-2 text-red-400 font-sm text-right  text-md' ><MdOutlineError style={{ marginLeft: '3px', marginTop: '3px' }} /></p>}
-              <div >
-                <p className={'ml-2  font-sm text-left  font-normal text-red-500'} >  Videos failed to be scraped : <b> {scrapingResult?.profileVideosCount - scrapingResult?.allDownloadedVideosCount}</b> video{(scrapingResult?.profileVideosCount - scrapingResult?.allDownloadedVideosCount) > 1 && 's'}  </p>
-              </div>
-            </div>}
-
-          </div>
-
+            )
+          })}
 
 
         </div>}
