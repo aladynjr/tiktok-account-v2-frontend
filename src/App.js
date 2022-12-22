@@ -30,7 +30,6 @@ function App() {
 
   }
 
-
   //receive socket messages 
   const [fetchingMessage, setFetchingMessage] = useState(null);
   useEffect(() => {
@@ -46,54 +45,28 @@ function App() {
 
       }
     })
-
-
   }, [socket])
 
   //input
-  const [videoLink, setVideoLink] = useState('')
+  const [usernameInput, setUsernameInput] = useState('')
 
   //loading
   const [loadingAccountVideos, setLoadingAccountVideos] = useState(false);
 
-  //results
-  /*const [accountVideos, setAccountVideos] = useState([
-    'https://www.tiktok.com/@tunisian_series3/video/7160405297272507653',
-    'https://www.tiktok.com/@tunisian_series3/video/7160362907492961541',
-    'https://www.tiktok.com/@tunisian_series3/video/7160077387735043334',
-  ]);*/
-  const [accountVideos, setAccountVideos] = useState(null)
-
   //send username to backend, route to /scrape/:username
   const [scrapingAccountVideosErrorMessage, setScrapingAccountVideosErrorMessage] = useState('');
 
-  /* const [scrapingResult, setScrapingResult] = useState(
-     {
-       allDownloadLink: "localhost:8080/redirect/zip/saba._.tabaza",
-       newDownloadLink: "localhost:8080/redirect/zip/saba._.tabaza-new",
-       profileVideosCount: 7,
-       profileUsername: "saba._.tabaza",
-       allDownloadedVideosCount: 6,
-       newDownloadedVideosCount: 1
-     })*/
 
-  const [scrapingResult, setScrapingResult] = useState(null)
-  const [scrapingResults, setScrapingResults] = useState([])
-  console.log(scrapingResults)
-  const GetAccountVideos = async () => {
-    setScrapingAccountVideosErrorMessage('');
+
+  const [usernames, setUsernames] = useState(null)
+  var counter = 0;
+
+  const GetAllUsernames = async () => {
     setLoadingAccountVideos(true);
-    setScrapingResult(null);
-
-
-    var videoId = videoLink /*videoLink.substring(videoLink.indexOf('/video/') + 7, videoLink.indexOf('/video/') + 7 + 19)*/;
-
-
-    //join socket room
-    JoinRoom(videoId)
+    counter = 0;
 
     try {
-      const response = await fetch(`${SERVER_HOST}/api/${videoId}`, { //it's not videoId but username 
+      const response = await fetch(`${SERVER_HOST}/api/spreadsheet/all`, {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
@@ -101,16 +74,9 @@ function App() {
       });
       const data = await response.json();
       console.log(data)
-      setScrapingResult(data)
+      setUsernames(data)
+      console.log(usernames)
 
-      if(data?.error){
-       // setScrapingAccountVideosErrorMessage(data?.message);
-        setScrapingResults(scrapingResults => [{...data, error:data?.message }, ...scrapingResults])
-
-      } else {
-        setScrapingResults(scrapingResults => [data, ...scrapingResults])
-
-      }
 
     } catch (error) {
       setScrapingAccountVideosErrorMessage(error.message);
@@ -118,6 +84,62 @@ function App() {
     }
     finally {
       setLoadingAccountVideos(false);
+    }
+  }
+
+
+
+  const [scrapingResults, setScrapingResults] = useState([])
+
+  const GetAccountVideos = async (bulk) => {
+    setScrapingAccountVideosErrorMessage('');
+    setLoadingAccountVideos(true);
+
+
+    var username = usernameInput; /*videoLink.substring(videoLink.indexOf('/video/') + 7, videoLink.indexOf('/video/') + 7 + 19)*/;
+    if (bulk) {
+      console.log('using bulk usernames ! current username : ' + usernames[counter] + '    counter : ' + (counter) + ' / ' + (usernames?.length - 1))
+      username = usernames[counter]
+      setLoadingAccountVideos(true);
+
+    }
+
+    //join socket room
+    JoinRoom(username)
+
+    try {
+      const response = await fetch(`${SERVER_HOST}/api/user/${username}`, { //it's not videoId but username 
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
+        }
+      });
+      const data = await response.json();
+
+      var newItem = data?.error ? { ...data, error: data?.message } : data;
+      console.log(data)
+
+
+      setScrapingResults(scrapingResults => [newItem, ...scrapingResults])
+
+      if (bulk && (counter != (usernames?.length - 1))) {
+        counter += 1;
+        console.log('counter : ' + (counter) + ' / ' + (usernames?.length - 1) + '  started scraping username ' + usernames[counter] + '')
+
+        GetAccountVideos(bulk)
+      } else {
+        setLoadingAccountVideos(false);
+      }
+
+
+
+    } catch (error) {
+      setScrapingAccountVideosErrorMessage(error.message);
+      if (!bulk) setLoadingAccountVideos(false);
+
+    }
+    finally {
+      if (!bulk) setLoadingAccountVideos(false);
     }
   }
 
@@ -140,6 +162,8 @@ function App() {
   }, [loadingAccountVideos])
 
 
+
+
   return (
     <div className="App" style={{ paddingTop: '100px', paddingBottom: '350px' }} >
 
@@ -150,8 +174,8 @@ function App() {
 
 
         <div style={{ display: 'flex', alignItems: 'center', marginTop: '40px' }} >
-          <p style={{ opacity: '0.5', fontSize: '20px', marginRight: '7px' }} >@</p>
-          <input type="text" value={videoLink} onChange={(e) => setVideoLink(e.target.value)} placeholder="username" data-e2e="common-StringInput-TUXTextInput" className="css-5g0doo eyio37s1 snipcss-woI25" />
+          <p style={{ opacity: (usernameInput == 'all') ? '0' : '0.5', fontSize: '20px', marginRight: '7px' }} >@</p>
+          <input type="text" value={usernameInput} onChange={(e) => setUsernameInput(e.target.value)} placeholder="username" data-e2e="common-StringInput-TUXTextInput" className="css-5g0doo eyio37s1 snipcss-woI25" />
 
 
         </div>
@@ -159,9 +183,18 @@ function App() {
 
           <button type="button"
             style={{ opacity: (loadingAccountVideos) && '0.5', pointerEvents: (loadingAccountVideos) && 'none' }}
-            onClick={() => { GetAccountVideos() }}
-            className="inline-block mt-9 px-7 py-3 bg-rose-500 text-white font-medium text-sm leading-snug uppercase rounded shadow-md hover:bg-rose-600 hover:shadow-lg  focus:shadow-lg focus:outline-none focus:ring-0  focus:shadow-lg transition duration-150 ease-in-out ">
-            Start
+            onClick={() => {
+              if ((usernameInput == 'all') && !usernames) {
+                GetAllUsernames()
+              } else if ((usernameInput == 'all') && usernames) {
+
+                GetAccountVideos(true)
+              } else {
+                GetAccountVideos()
+              }
+            }}
+            className={clsx("inline-block mt-9 px-7 py-3 bg-rose-500 text-white font-medium text-sm leading-snug uppercase rounded shadow-md hover:bg-rose-600 hover:shadow-lg  focus:shadow-lg focus:outline-none focus:ring-0  focus:shadow-lg transition duration-150 ease-in-out ", ((usernameInput == 'all') && usernames) && 'bg-orange-500')}>
+            {((usernameInput == 'all') && usernames) ? 'Start Bulk' : 'Start'}
 
           </button>
         </Tooltip>
@@ -172,25 +205,21 @@ function App() {
 
         {scrapingResults && <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', margin: 'auto', width: 'fit-content', marginTop: '40px' }} >
 
-          {scrapingResults.map((scrapingResult) => {
+          {scrapingResults.map((scrapingResult, i) => {
             return (
-              <div style={{marginBottom:'30px', marginTop:'20px'}}>
+              <div key={i} style={{ marginBottom: '30px', marginTop: '20px' }}>
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', opacity: (scrapingResult) ? '1' : '0.5' }} >
-                  {scrapingResult.allDownloadLink ? <AiFillCheckCircle className='StepsNumber' style={{ backgroundColor: scrapingResult && 'limegreen' }} /> : <BiError className='StepsNumber' style={{color:'red', background:'none'}} />}
+                  {scrapingResult.allDownloadLink ? <AiFillCheckCircle className='StepsNumber' style={{ backgroundColor: scrapingResult && 'limegreen' }} /> : <BiError className='StepsNumber' style={{ color: 'red', background: 'none' }} />}
 
                   {scrapingResult?.allDownloadLink ? <p className='StepsLabel' ><b>{scrapingResult.profileUsername}</b> profile scraped !   &nbsp;
-                    {accountVideos &&
-                      <b>({accountVideos?.length} video)
-                      </b>
-                    }
-                  </p> : <p className='StepsLabel' style={{color:'red',textAlign: 'left'}}><b>{scrapingResult?.profileUsername} </b> Something went wrong, couldn't scrape profile !</p>}
+                  </p> : <p className='StepsLabel' style={{ color: 'red', textAlign: 'left' }}><b>{scrapingResult?.profileUsername} </b> Something went wrong, couldn't scrape profile !</p>}
 
 
                 </div>
 
                 <div className='FirstStepContent' style={{ borderLeft: '1px solid lightgrey', paddingLeft: '30px', marginLeft: '20px', marginTop: '30px' }} >
-                {scrapingResult?.error && <div style={{ color: 'red', fontWeight: '400', fontSize:'10px', marginBlock:'10px' }} > {scrapingResult?.error}</div>}
+                  {scrapingResult?.error && <div style={{ color: 'red', fontWeight: '400', fontSize: '10px', marginBlock: '10px' }} > {scrapingResult?.error}</div>}
 
                   <div className="text-green-500 mt-0 mb-4 hover:text-green-600 text-sm transition duration-300 ease-in-out mb-4 bg:black py-2 px-4 bg-slate-100 rounded-md w-full 	 "   >
                     <p className={clsx('ml-2  font-sm text-left  font-normal text-gray-600')} >  Total profile videos : <b> {scrapingResult?.profileVideosCount || 0}</b> videos  </p>
